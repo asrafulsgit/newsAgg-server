@@ -1,28 +1,20 @@
-const { createLogger, format, transports } = require('winston');
-const path = require('path');
+import winston from "winston";
 
-const { combine, timestamp, errors, json, colorize, printf } = format;
+const transports = [
+  new winston.transports.Console(),
+];
 
-const devFormat = printf(({ level, message, timestamp, stack }) => {
-  return `${timestamp} [${level}]: ${stack || message}`;
+if (process.env.NODE_ENV !== "production") {
+  transports.push(
+    new winston.transports.File({ filename: "logs/error.log", level: "error" }),
+    new winston.transports.File({ filename: "logs/combined.log" })
+  );
+}
+
+const logger = winston.createLogger({
+  level: "info",
+  format: winston.format.json(),
+  transports,
 });
 
-const logger = createLogger({
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  format: combine(
-    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    errors({ stack: true }),
-    process.env.NODE_ENV === 'production' ? json() : combine(colorize(), devFormat)
-  ),
-  transports: [
-    new transports.Console(),
-    ...(process.env.NODE_ENV === 'production'
-      ? [
-          new transports.File({ filename: path.join('logs', 'error.log'), level: 'error' }),
-          new transports.File({ filename: path.join('logs', 'combined.log') }),
-        ]
-      : []),
-  ],
-});
-
-module.exports = logger;
+export default logger;
